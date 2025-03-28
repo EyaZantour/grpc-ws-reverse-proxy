@@ -61,6 +61,8 @@ Send messages in the format:
         "content": "string"
     }
 }
+![image](https://github.com/user-attachments/assets/a9a44207-1344-45b0-8b61-3afca447230b)
+
 Request history:
 
 {
@@ -69,6 +71,7 @@ Request history:
         "limit": number
     }
 }
+![image](https://github.com/user-attachments/assets/54718ab6-e319-4a9f-8b9b-460777ce198c)
 
 ## Acknowledgments
 
