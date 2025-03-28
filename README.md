@@ -33,7 +33,7 @@ grpc-ws-reverse-proxy/
 
 
 
-##API Documentation
+## API Documentation
 
 gRPC Service (ChatService)
 GetUser(GetUserRequest) returns (GetUserResponse)
@@ -70,7 +70,8 @@ Request history:
     }
 }
 
-##Acknowledgments
+## Acknowledgments
 
 Uses gRPC, Protocol Buffers, and WebSocket technologies
+
 
