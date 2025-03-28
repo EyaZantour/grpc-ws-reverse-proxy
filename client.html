@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gRPC WebSocket Chat Client</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #messages {
+            height: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+        }
+        #message-form {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        #message-input {
+            flex-grow: 1;
+            padding: 8px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #history-form {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .message .sender {
+            font-weight: bold;
+            color: #333;
+        }
+        .message .time {
+            font-size: 0.8em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>gRPC WebSocket Chat Client</h1>
+    <div id="messages"></div>
+    
+    <form id="message-form">
+        <input type="text" id="message-input" placeholder="Type your message..." required>
+        <button type="submit">Send</button>
+    </form>
+    
+    <form id="history-form">
+        <input type="text" id="room-id" placeholder="Room ID" value="room1" required>
+        <input type="number" id="limit" placeholder="Limit" value="5" required>
+        <button type="submit">Get History</button>
+    </form>
+    
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const messageForm = document.getElementById('message-form');
+        const messageInput = document.getElementById('message-input');
+        const historyForm = document.getElementById('history-form');
+        const roomIdInput = document.getElementById('room-id');
+        const limitInput = document.getElementById('limit');
+        
+        // Connect to WebSocket server
+        const ws = new WebSocket('ws://localhost:8080');
+        
+        ws.onopen = () => {
+            addMessage('System', 'Connected to chat server', new Date());
+        };
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            
+            if (data.error) {
+                addMessage('Error', data.error, new Date());
+            } else if (data.chat_message) {
+                const msg = data.chat_message;
+                addMessage(msg.sender_id, msg.content, new Date());
+            } else if (data.chat_history) {
+                addMessage('System', `Chat history (${data.chat_history.messages.length} messages):`, new Date());
+                data.chat_history.messages.forEach(msg => {
+                    addMessage(msg.sender_id, msg.content, new Date(msg.timestamp));
+                });
+            }
+        };
+        
+        ws.onclose = () => {
+            addMessage('System', 'Disconnected from chat server', new Date());
+        };
+        
+        ws.onerror = (error) => {
+            addMessage('Error', 'WebSocket error: ' + error.message, new Date());
+        };
+        
+        // Send message
+        messageForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const message = messageInput.value;
+            const msgId = 'msg-' + Date.now();
+            
+            const chatMessage = {
+                chat_message: {
+                    id: msgId,
+                    room_id: roomIdInput.value,
+                    sender_id: 'web-client',
+                    content: message
+                }
+            };
+            
+            ws.send(JSON.stringify(chatMessage));
+            messageInput.value = '';
+        });
+        
+        // Get history
+        historyForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const request = {
+                get_chat_history: {
+                    room_id: roomIdInput.value,
+                    limit: parseInt(limitInput.value)
+                }
+            };
+            
+            ws.send(JSON.stringify(request));
+        });
+        
+        // Helper function to add message to UI
+        function addMessage(sender, content, timestamp) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            const senderSpan = document.createElement('span');
+            senderSpan.className = 'sender';
+            senderSpan.textContent = sender + ': ';
+            
+            const contentSpan = document.createElement('span');
+            contentSpan.className = 'content';
+            contentSpan.textContent = content;
+            
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'time';
+            timeSpan.textContent = ' (' + timestamp.toLocaleTimeString() + ')';
+            
+            messageDiv.appendChild(senderSpan);
+            messageDiv.appendChild(contentSpan);
+            messageDiv.appendChild(timeSpan);
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
